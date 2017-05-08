@@ -105,14 +105,17 @@ func read_everything(stub shim.ChaincodeStubInterface) pb.Response {
 	defer resultsIterator.Close()
 	
 	for resultsIterator.HasNext() {
-		queryKeyAsStr, queryValAsBytes, err := resultsIterator.Next()
+		//queryKeyAsStr, queryValAsBytes, err := resultsIterator.Next()
+		queryResults, err := resultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 
-		fmt.Println("on marble id - ", queryKeyAsStr)
+		//fmt.Println("on marble id - ", queryKeyAsStr)
+		fmt.Println("on marble id - ", queryResults.Key)
 		var marble Marble
-		json.Unmarshal(queryValAsBytes, &marble)                  //un stringify it aka JSON.parse()
+		//json.Unmarshal(queryValAsBytes, &marble)                  //un stringify it aka JSON.parse()
+		json.Unmarshal(queryResults.Value, &marble)                  //un stringify it aka JSON.parse()
 		everything.Marbles = append(everything.Marbles, marble)   //add this marble to the list
 	}
 	fmt.Println("marble array - ", everything.Marbles)
@@ -125,14 +128,17 @@ func read_everything(stub shim.ChaincodeStubInterface) pb.Response {
 	defer ownersIterator.Close()
 
 	for ownersIterator.HasNext() {
-		queryKeyAsStr, queryValAsBytes, err := ownersIterator.Next()
+		//queryKeyAsStr, queryValAsBytes, err := ownersIterator.Next()
+		queryResults, err := ownersIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 		
-		fmt.Println("on owner id - ", queryKeyAsStr)
+		//fmt.Println("on owner id - ", queryKeyAsStr)
+		fmt.Println("on owner id - ", queryResults.Key)
 		var owner Owner
-		json.Unmarshal(queryValAsBytes, &owner)                  //un stringify it aka JSON.parse()
+		//json.Unmarshal(queryValAsBytes, &owner)                  //un stringify it aka JSON.parse()
+		json.Unmarshal(queryResults.Value, &owner)                  //un stringify it aka JSON.parse()
 		everything.Owners = append(everything.Owners, owner)     //add this marble to the list
 	}
 	fmt.Println("owner array - ", everything.Owners)
@@ -175,19 +181,23 @@ func getHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	defer resultsIterator.Close()
 
 	for resultsIterator.HasNext() {
-		txID, historicValue, err := resultsIterator.Next()
+		//txID, historicValue, err := resultsIterator.Next()
+		queryResults, err := resultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 
 		var tx AuditHistory
-		tx.TxId = txID                             //copy transaction id over
-		json.Unmarshal(historicValue, &marble)     //un stringify it aka JSON.parse()
-		if historicValue == nil {                  //marble has been deleted
+		//tx.TxId = txID                           //copy transaction id over
+		tx.TxId = queryResults.TxId         //copy transaction id over
+		//json.Unmarshal(historicValue, &marble)   //un stringify it aka JSON.parse()
+		//if historicValue == nil {                //marble has been deleted
+		if queryResults.Value == nil {             //marble has been deleted
 			var emptyMarble Marble
-			tx.Value = emptyMarble                 //copy nil marble
+			tx.Value = emptyMarble             //copy nil marble
 		} else {
-			json.Unmarshal(historicValue, &marble) //un stringify it aka JSON.parse()
+			//json.Unmarshal(historicValue, &marble) //un stringify it aka JSON.parse()
+			json.Unmarshal(queryResults.Value, &marble) //un stringify it aka JSON.parse()
 			tx.Value = marble                      //copy marble over
 		}
 		history = append(history, tx)              //add this tx to the list
@@ -229,7 +239,8 @@ func getMarblesByRange(stub shim.ChaincodeStubInterface, args []string) pb.Respo
 
 	bArrayMemberAlreadyWritten := false
 	for resultsIterator.HasNext() {
-		queryResultKey, queryResultValue, err := resultsIterator.Next()
+		//queryResultKey, queryResultValue, err := resultsIterator.Next()
+		queryResults, err := resultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -239,12 +250,14 @@ func getMarblesByRange(stub shim.ChaincodeStubInterface, args []string) pb.Respo
 		}
 		buffer.WriteString("{\"Key\":")
 		buffer.WriteString("\"")
-		buffer.WriteString(queryResultKey)
+		//buffer.WriteString(queryResultKey)
+		buffer.WriteString(queryResults.Key)
 		buffer.WriteString("\"")
 
 		buffer.WriteString(", \"Record\":")
 		// Record is a JSON object, so we write as-is
-		buffer.WriteString(string(queryResultValue))
+		//buffer.WriteString(string(queryResultValue))
+		buffer.WriteString(string(queryResults.Value))
 		buffer.WriteString("}")
 		bArrayMemberAlreadyWritten = true
 	}
